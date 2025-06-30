@@ -163,26 +163,28 @@ def validate_xml(xml_data: bytes, rules: dict):
         st.markdown("### 📋 Výpis základních informací z faktury")
 
         field_map = {
-            "ID faktury": "InvoiceNumber",
-            "Dodavatel": "Supplier/Name",
-            "Číslo objednávky": "OrderReference/ID",
-            "Číslo dodacího listu": "DespatchAdviceReference/ID",
-            "Číslo faktury": "InvoiceNumber",
-            "Variabilní symbol": "VariableSymbol",
-            "Částka bez DPH": "TaxExclusiveAmount",
-            "Částka k úhradě": "GrandTotalAmount",
-            "Datum přijetí": "ReceivedDate",
-            "Datum splatnosti": "DueDate",
-            "Datum DUZP": "TaxPointDate",
-            "Číslo bankovního účtu": "PaymentMeans/PayeeFinancialAccount/ID",
-            "Kód banky": "PaymentMeans/PayeeFinancialAccount/FinancialInstitutionBranch/ID",
-            "Popis": "Note",
-            "IČO výstavce": "Supplier/PartyIdentification/ID",
-            "DIČ výstavce": "Supplier/TaxRepresentativeParty/PartyIdentification/ID",
-            "DIČ příjemce": "Customer/TaxRepresentativeParty/PartyIdentification/ID",
-            "Číslo smlouvy": "ContractDocumentReference/ID",
-            "Číslo splátky": "InstallmentSequenceNumber"
-        }
+            field_map = {
+                "ID faktury": "ID",
+                "Dodavatel": "AccountingCustomerParty/Party/PartyName/Name",
+                "Číslo objednávky": "OrderReference/ID",
+                "Číslo dodacího listu": "DespatchAdviceReference/ID",
+                "Číslo faktury": "ID",
+                "Variabilní symbol": "VariableSymbol",
+                "Částka bez DPH": "LegalMonetaryTotal/TaxExclusiveAmount",  # často chybí, záloha
+                "Částka k úhradě": "LegalMonetaryTotal/PayableAmount",
+                "Datum přijetí": "ReceivedDate",  # málokdy se vyskytuje
+                "Datum splatnosti": "DueDate",
+                "Datum DUZP": "TaxPointDate",
+                "Číslo bankovního účtu": "PaymentMeans/PayeeFinancialAccount/ID",
+                "Kód banky": "PaymentMeans/PayeeFinancialAccount/FinancialInstitutionBranch/ID",
+                "Popis": "Note",
+                "IČO výstavce": "AccountingSupplierParty/Party/PartyIdentification/ID",
+                "DIČ výstavce": "AccountingSupplierParty/Party/PartyTaxScheme/CompanyID",
+                "DIČ příjemce": "AccountingCustomerParty/Party/PartyTaxScheme/CompanyID",
+                "Číslo smlouvy": "ContractDocumentReference/ID",
+                "Číslo splátky": "InstallmentSequenceNumber"
+            }
+
 
         for label, path in field_map.items():
             xp = "//" + "/".join([f"ns:{p}" for p in path.split("/")])
