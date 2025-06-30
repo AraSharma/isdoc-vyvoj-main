@@ -3,3 +3,5 @@ lxml
 PyMuPDF
 pikepdf
 PyPDF2
+pytesseract
+Pillow
