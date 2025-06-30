@@ -98,7 +98,7 @@ def extract_from_xrefs(pdf_bytes):
 def extract_base64(pdf_bytes):
     try:
         text = pdf_bytes.decode("utf-8", errors="ignore")
-        match = re.search(r'PD94bWwgdmVyc2lvbj0i[^"]+', text)
+        match = re.search(r"PD94bWwgdmVyc2lvbj0i[^"]+", text)
         if match:
             decoded = base64.b64decode(match.group(0))
             if b"<Invoice" in decoded:
