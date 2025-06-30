@@ -162,8 +162,7 @@ def validate_xml(xml_data: bytes, rules: dict):
         # Výpis specifických hodnot
         st.markdown("### 📋 Výpis základních informací z faktury")
 
-        field_map = {
-            field_map = {
+              field_map = {
                     "ID faktury": "ID",
                     "Dodavatel": "AccountingCustomerParty/Party/PartyName/Name",
                     "Číslo objednávky": "OrderReference/ID",
@@ -183,8 +182,8 @@ def validate_xml(xml_data: bytes, rules: dict):
                     "DIČ příjemce": "AccountingCustomerParty/Party/PartyTaxScheme/CompanyID",
                     "Číslo smlouvy": "ContractDocumentReference/ID",
                     "Číslo splátky": "InstallmentSequenceNumber"
-                    }
-                 }
+                }
+
         
 
 
