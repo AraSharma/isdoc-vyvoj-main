@@ -14,7 +14,7 @@ import pytesseract
 from PIL import Image
 
 st.set_page_config(page_title="ISDOC Validátor", layout="centered")
-st.title("💾 ISDOC Validátor (kompletní)")
+st.title("📂 ISDOC Validátor (kompletní)")
 
 # Režim validace
 st.markdown("### ⚙️ Zvol režim zpracování")
@@ -36,7 +36,7 @@ elif rule_mode == "Jiná společnost":
     else:
         st.stop()
 
-# Upload souboru
+# Upload souborů
 if validation_mode == "Jedna faktura":
     uploaded_files = [st.file_uploader("Nahraj fakturu:", type=["pdf", "xml", "isdoc"], key="single")]
 else:
@@ -98,8 +98,7 @@ def extract_from_xrefs(pdf_bytes):
 def extract_base64(pdf_bytes):
     try:
         text = pdf_bytes.decode("utf-8", errors="ignore")
-        match = re.search(r"PD94bWwgdmVyc2lvbj0i[^\"]+", text)
-
+        match = re.search(r'PD94bWwgdmVyc2lvbj0i[^\"]+', text)
         if match:
             decoded = base64.b64decode(match.group(0))
             if b"<Invoice" in decoded:
@@ -134,7 +133,36 @@ def validate_xml(xml_data: bytes, rules: dict):
         nsmap = root.nsmap.copy()
         ns = {"ns": nsmap.get(None, "")}
 
-        # Validace dle pravidel
+        field_map = {
+            "ID faktury": "ID",
+            "Dodavatel": "AccountingCustomerParty/Party/PartyName/Name",
+            "Číslo objednávky": "OrderReference/ID",
+            "Číslo dodacího listu": "DespatchAdviceReference/ID",
+            "Číslo faktury": "ID",
+            "Variabilní symbol": "VariableSymbol",
+            "Částka bez DPH": "LegalMonetaryTotal/TaxExclusiveAmount",
+            "Částka k úhradě": "LegalMonetaryTotal/PayableAmount",
+            "Datum přijetí": "ReceivedDate",
+            "Datum splatnosti": "DueDate",
+            "Datum DUZP": "TaxPointDate",
+            "Číslo bankovního účtu": "PaymentMeans/PayeeFinancialAccount/ID",
+            "Kód banky": "PaymentMeans/PayeeFinancialAccount/FinancialInstitutionBranch/ID",
+            "Popis": "Note",
+            "IČO výstavce": "AccountingSupplierParty/Party/PartyIdentification/ID",
+            "DIČ výstavce": "AccountingSupplierParty/Party/PartyTaxScheme/CompanyID",
+            "DIČ příjemce": "AccountingCustomerParty/Party/PartyTaxScheme/CompanyID",
+            "Číslo smlouvy": "ContractDocumentReference/ID",
+            "Číslo splátky": "InstallmentSequenceNumber"
+        }
+
+        st.markdown("### 📋 Základní informace z faktury")
+        for label, path in field_map.items():
+            xp = "//" + "/".join([f"ns:{p}" for p in path.split("/")])
+            result = tree.xpath(xp, namespaces=ns)
+            value = result[0].text.strip() if result and hasattr(result[0], "text") else "–"
+            st.markdown(f"**{label}**: {value}")
+            values[label] = value
+
         for path in rules.get("required_fields", []):
             xp = "//" + "/".join([f"ns:{p}" for p in path.split("/")])
             result = tree.xpath(xp, namespaces=ns)
@@ -146,10 +174,7 @@ def validate_xml(xml_data: bytes, rules: dict):
         for path in rules.get("optional_fields", []):
             xp = "//" + "/".join([f"ns:{p}" for p in path.split("/")])
             result = tree.xpath(xp, namespaces=ns)
-            if result and hasattr(result[0], "text"):
-                values[path] = result[0].text.strip()
-            else:
-                values[path] = "–"
+            values[path] = result[0].text.strip() if result and hasattr(result[0], "text") else "–"
 
         for path, expected in rules.get("expected_values", {}).items():
             xp = "//" + "/".join([f"ns:{p}" for p in path.split("/")])
@@ -159,44 +184,9 @@ def validate_xml(xml_data: bytes, rules: dict):
                 errors.append(f"Neshoda v hodnotě `{path}`: očekáváno `{expected}`, nalezeno `{found}`")
             values[path] = found or "–"
 
-        # Výpis specifických hodnot
-        st.markdown("### 📋 Výpis základních informací z faktury")
-
-              field_map = {
-                    "ID faktury": "ID",
-                    "Dodavatel": "AccountingCustomerParty/Party/PartyName/Name",
-                    "Číslo objednávky": "OrderReference/ID",
-                    "Číslo dodacího listu": "DespatchAdviceReference/ID",
-                    "Číslo faktury": "ID",
-                    "Variabilní symbol": "VariableSymbol",
-                    "Částka bez DPH": "LegalMonetaryTotal/TaxExclusiveAmount",  # často chybí, záloha
-                    "Částka k úhradě": "LegalMonetaryTotal/PayableAmount",
-                    "Datum přijetí": "ReceivedDate",  # málokdy se vyskytuje
-                    "Datum splatnosti": "DueDate",
-                    "Datum DUZP": "TaxPointDate",
-                    "Číslo bankovního účtu": "PaymentMeans/PayeeFinancialAccount/ID",
-                    "Kód banky": "PaymentMeans/PayeeFinancialAccount/FinancialInstitutionBranch/ID",
-                    "Popis": "Note",
-                    "IČO výstavce": "AccountingSupplierParty/Party/PartyIdentification/ID",
-                    "DIČ výstavce": "AccountingSupplierParty/Party/PartyTaxScheme/CompanyID",
-                    "DIČ příjemce": "AccountingCustomerParty/Party/PartyTaxScheme/CompanyID",
-                    "Číslo smlouvy": "ContractDocumentReference/ID",
-                    "Číslo splátky": "InstallmentSequenceNumber"
-                }
-
-        
-
-
-        for label, path in field_map.items():
-            xp = "//" + "/".join([f"ns:{p}" for p in path.split("/")])
-            result = tree.xpath(xp, namespaces=ns)
-            value = result[0].text.strip() if result and hasattr(result[0], "text") else "–"
-            st.markdown(f"**{label}**: {value}")
-
     except Exception as e:
         errors.append(f"Chyba při zpracování XML: {e}")
     return errors, values
-
 
 def generate_rules_from_xml(xml_data: bytes):
     try:
@@ -240,7 +230,7 @@ def process_file(data, name):
 
     if rule_mode == "Vygenerovat z faktury":
         rules = generate_rules_from_xml(xml_data)
-        st.markdown("### 🛠 Vygenerovaná pravidla")
+        st.markdown("### 📅 Vygenerovaná pravidla")
         st.code(json.dumps(rules, indent=2, ensure_ascii=False), language="json")
         st.download_button("📅 Stáhnout pravidla jako JSON", json.dumps(rules, indent=2), file_name="rules_generated.json")
     else:
@@ -252,9 +242,6 @@ def process_file(data, name):
                 st.markdown(f"- {e}")
         else:
             st.success("✅ Faktura splňuje všechny požadavky.")
-        st.markdown("### 📋 Výpis hodnot:")
-        for k, v in values.items():
-            st.markdown(f"**{k}**: {v}")
 
 # ===== Zpracování =====
 if uploaded_files:
