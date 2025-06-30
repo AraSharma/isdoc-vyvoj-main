@@ -188,14 +188,15 @@ def process_file(data, name):
 # ===== Zpracování =====
 if uploaded_files:
     for file in uploaded_files:
-        st.markdown(f"### 📄 Zpracovávám: `{file.name}`")
-        if file.name.lower().endswith(".zip"):
-            with zipfile.ZipFile(file) as archive:
-                for name in archive.namelist():
-                    with archive.open(name) as inner_file:
-                        st.markdown(f"#### 📄 `{name}`")
-                        data = inner_file.read()
-                        process_file(data, name)
-        else:
-            data = file.read()
-            process_file(data, file.name)
+        if file:
+            st.markdown(f"### 📄 Zpracovávám: `{file.name}`")
+            if file.name.lower().endswith(".zip"):
+                with zipfile.ZipFile(file) as archive:
+                    for name in archive.namelist():
+                        with archive.open(name) as inner_file:
+                            st.markdown(f"#### 📄 `{name}`")
+                            data = inner_file.read()
+                            process_file(data, name)
+            else:
+                data = file.read()
+                process_file(data, file.name)
