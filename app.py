@@ -8,9 +8,13 @@ import re
 import json
 import zipfile
 import io
+import base64
+import tempfile
+import pytesseract
+from PIL import Image
 
 st.set_page_config(page_title="ISDOC Validátor", layout="centered")
-st.title("🧾 ISDOC Validátor (vývoj)")
+st.title("🧾 ISDOC Validátor (kompletní)")
 
 # Režim validace
 st.markdown("### ⚙️ Zvol režim zpracování")
@@ -91,6 +95,35 @@ def extract_from_xrefs(pdf_bytes):
         return None, f"xref error: {e}"
     return None, None
 
+def extract_base64(pdf_bytes):
+    try:
+        text = pdf_bytes.decode("utf-8", errors="ignore")
+        match = re.search(r"PD94bWwgdmVyc2lvbj0i[^\"]+", text)
+        if match:
+            decoded = base64.b64decode(match.group(0))
+            if b"<Invoice" in decoded:
+                return decoded, "base64 decode"
+    except Exception as e:
+        return None, f"base64 error: {e}"
+    return None, None
+
+def extract_ocr(pdf_bytes):
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(pdf_bytes)
+            tmp_path = tmp.name
+        doc = fitz.open(tmp_path)
+        for page_index in range(len(doc)):
+            pix = doc[page_index].get_pixmap()
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            text = pytesseract.image_to_string(img)
+            match = re.search(r'(<Invoice[^>]+xmlns="http://isdoc.cz/namespace/2013"[^>]*>.*?</Invoice>)', text, re.DOTALL)
+            if match:
+                return match.group(1).encode(), "OCR"
+    except Exception as e:
+        return None, f"OCR error: {e}"
+    return None, None
+
 def validate_xml(xml_data: bytes, rules: dict):
     errors = []
     values = {}
@@ -148,12 +181,27 @@ def generate_rules_from_xml(xml_data: bytes):
         st.error(f"Chyba při generování pravidel: {e}")
         return {}
 
+# ===== Zpracování =====
+if uploaded_files:
+    for file in uploaded_files:
+        st.markdown(f"### 📄 Zpracovávám: `{file.name}`")
+        if file.name.lower().endswith(".zip"):
+            with zipfile.ZipFile(file) as archive:
+                for name in archive.namelist():
+                    with archive.open(name) as inner_file:
+                        st.markdown(f"#### 📄 `{name}`")
+                        data = inner_file.read()
+                        process_file(data, name)
+        else:
+            data = file.read()
+            process_file(data, file.name)
+
 def process_file(data, name):
     xml_data, method = None, None
     if name.lower().endswith(".pdf"):
         with open("temp.pdf", "wb") as f:
             f.write(data)
-        for extractor in [extract_with_fitz, extract_from_text, extract_from_binary, extract_from_xrefs]:
+        for extractor in [extract_with_fitz, extract_from_text, extract_from_binary, extract_from_xrefs, extract_base64, extract_ocr]:
             xml_data, method = extractor(data)
             if xml_data:
                 break
@@ -184,19 +232,3 @@ def process_file(data, name):
         st.markdown("### 📋 Výpis hodnot:")
         for k, v in values.items():
             st.markdown(f"**{k}**: {v}")
-
-# ===== Zpracování =====
-if uploaded_files:
-    for file in uploaded_files:
-        if file:
-            st.markdown(f"### 📄 Zpracovávám: `{file.name}`")
-            if file.name.lower().endswith(".zip"):
-                with zipfile.ZipFile(file) as archive:
-                    for name in archive.namelist():
-                        with archive.open(name) as inner_file:
-                            st.markdown(f"#### 📄 `{name}`")
-                            data = inner_file.read()
-                            process_file(data, name)
-            else:
-                data = file.read()
-                process_file(data, file.name)
