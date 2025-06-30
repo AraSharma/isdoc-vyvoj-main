@@ -10,7 +10,7 @@ import zipfile
 import io
 
 st.set_page_config(page_title="ISDOC Validátor", layout="centered")
-st.title("🧾 ISDOC Validátor (kompletní)")
+st.title("🧾 ISDOC Validátor (vývoj)")
 
 # Režim validace
 st.markdown("### ⚙️ Zvol režim zpracování")
