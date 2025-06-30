@@ -1,0 +1,16 @@
+{
+  "required_fields": [
+    "InvoiceNumber",
+    "IssueDate",
+    "DueDate",
+    "AccountingSupplierParty/Party/PartyIdentification/ID",
+    "AccountingCustomerParty/Party/PartyIdentification/ID",
+    "PaymentMeans/PayeeFinancialAccount/ID",
+    "TaxTotal/TaxAmount",
+    "LegalMonetaryTotal/PayableAmount"
+  ],
+  "expected_values": {
+    "AccountingCustomerParty/Party/PartyIdentification/ID": "45800415",
+    "AccountingCustomerParty/Party/PartyName/Name": "TV Nova s.r.o."
+  }
+}

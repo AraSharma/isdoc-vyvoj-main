@@ -1,0 +1,12 @@
+{
+  "required_fields": [
+    "InvoiceNumber",
+    "DueDate",
+    "PaymentMeans/PayeeFinancialAccount/ID"
+  ],
+  "optional_fields": [
+    "BuyerParty/PartyName",
+    "SellerParty/PartyName"
+  ],
+  "expected_values": {}
+}
