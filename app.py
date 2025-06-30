@@ -14,7 +14,7 @@ import pytesseract
 from PIL import Image
 
 st.set_page_config(page_title="ISDOC Validátor", layout="centered")
-st.title("🧾 ISDOC Validátor (kompletní)")
+st.title("🧾 ISDOC Validátor (vyvoj)")
 
 # Režim validace
 st.markdown("### ⚙️ Zvol režim zpracování")
