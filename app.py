@@ -134,6 +134,7 @@ def validate_xml(xml_data: bytes, rules: dict):
         nsmap = root.nsmap.copy()
         ns = {"ns": nsmap.get(None, "")}
 
+        # Validace dle pravidel
         for path in rules.get("required_fields", []):
             xp = "//" + "/".join([f"ns:{p}" for p in path.split("/")])
             result = tree.xpath(xp, namespaces=ns)
@@ -157,9 +158,42 @@ def validate_xml(xml_data: bytes, rules: dict):
             if found != expected:
                 errors.append(f"Neshoda v hodnotě `{path}`: očekáváno `{expected}`, nalezeno `{found}`")
             values[path] = found or "–"
+
+        # Výpis specifických hodnot
+        st.markdown("### 📋 Výpis základních informací z faktury")
+
+        field_map = {
+            "ID faktury": "InvoiceNumber",
+            "Dodavatel": "Supplier/Name",
+            "Číslo objednávky": "OrderReference/ID",
+            "Číslo dodacího listu": "DespatchAdviceReference/ID",
+            "Číslo faktury": "InvoiceNumber",
+            "Variabilní symbol": "VariableSymbol",
+            "Částka bez DPH": "TaxExclusiveAmount",
+            "Částka k úhradě": "GrandTotalAmount",
+            "Datum přijetí": "ReceivedDate",
+            "Datum splatnosti": "DueDate",
+            "Datum DUZP": "TaxPointDate",
+            "Číslo bankovního účtu": "PaymentMeans/PayeeFinancialAccount/ID",
+            "Kód banky": "PaymentMeans/PayeeFinancialAccount/FinancialInstitutionBranch/ID",
+            "Popis": "Note",
+            "IČO výstavce": "Supplier/PartyIdentification/ID",
+            "DIČ výstavce": "Supplier/TaxRepresentativeParty/PartyIdentification/ID",
+            "DIČ příjemce": "Customer/TaxRepresentativeParty/PartyIdentification/ID",
+            "Číslo smlouvy": "ContractDocumentReference/ID",
+            "Číslo splátky": "InstallmentSequenceNumber"
+        }
+
+        for label, path in field_map.items():
+            xp = "//" + "/".join([f"ns:{p}" for p in path.split("/")])
+            result = tree.xpath(xp, namespaces=ns)
+            value = result[0].text.strip() if result and hasattr(result[0], "text") else "–"
+            st.markdown(f"**{label}**: {value}")
+
     except Exception as e:
         errors.append(f"Chyba při zpracování XML: {e}")
     return errors, values
+
 
 def generate_rules_from_xml(xml_data: bytes):
     try:
